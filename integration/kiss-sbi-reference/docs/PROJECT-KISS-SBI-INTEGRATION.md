@@ -4,8 +4,7 @@
 **Date**: August 29, 2025  
 **Timestamp**: 2025-08-29
 **Status**: Planning Phase  
-**Copy**: Forked Git-updater copy
-**Canonical Source**: https://github.com/kissplugins/KISS-Smart-Batch-Installer-MKII/blob/development/docs/PROJECT-KISS-SBI-INTEGRATION.md
+**Copy**: SBI "orginal"
 
 ---
 
@@ -60,90 +59,6 @@ $installer->install('plugin', $config);
 | **Branch Selection** | ✅ Any branch | ❌ Stable only |
 | **Development Versions** | ✅ Pre-release support | ❌ Limited |
 | **Custom Hosting** | ✅ Self-hosted Git | ❌ WordPress.org only |
-
----
-
-## 🔍 FSM Analysis: Git Updater vs KISS SBI
-
-### **CRITICAL FINDING: Git Updater Has NO Finite State Machine** ❌
-
-**Git Updater's Current State Management:**
-- ❌ **No Centralized State Management** - Uses scattered WordPress options and transients
-- ❌ **No Finite State Machine** - No formal state transitions or validation
-- ❌ **No Real-time Updates** - Basic form submissions with page reloads
-- ❌ **No State Synchronization** - No coordination between frontend and backend states
-- ❌ **No Installation Progress Tracking** - Users have no visibility into installation status
-- ❌ **No Error Recovery** - Failed installations leave system in undefined state
-
-**Git Updater's Current Approach:**
-```php
-// Scattered state management in WordPress options
-self::$options = get_site_option('git_updater', []);
-update_site_option('git_updater', self::$options);
-
-// No state machine - just direct property setting
-$this->$type->remote_version = '0.0.0';
-$this->$type->download_link = '';
-$this->$type->branches = [];
-
-// No installation progress tracking
-if ($upgrader && $upgrader->install($url)) {
-    // Success - but no state management
-    (new Branch())->set_branch_on_install(self::$install);
-} else {
-    // Failure - no error state tracking
-    return false;
-}
-```
-
-### **KISS SBI's Superior FSM Architecture** ✅
-
-**KISS SBI's FSM Benefits:**
-- ✅ **Centralized StateManager** - Single source of truth for all plugin states
-- ✅ **Formal State Transitions** - Validated state changes with transition rules
-- ✅ **Real-time Broadcasting** - SSE for instant UI updates
-- ✅ **State Synchronization** - Frontend and backend always in sync
-- ✅ **Installation Progress Tracking** - Users see real-time installation status
-- ✅ **Error Recovery** - Comprehensive error handling and state recovery
-
-**KISS SBI's FSM Approach:**
-```php
-// Centralized state management with validation
-class StateManager {
-    const AVAILABLE = 'available';
-    const INSTALLING = 'installing';
-    const INSTALLED_INACTIVE = 'installed_inactive';
-    const INSTALLED_ACTIVE = 'installed_active';
-    const ERROR = 'error';
-
-    public function transition($repository, $new_state) {
-        // Validate transition is allowed
-        if (!$this->can_transition($this->get_state($repository), $new_state)) {
-            throw new InvalidStateTransitionException();
-        }
-
-        // Update state with validation
-        $this->set_state($repository, $new_state);
-
-        // Broadcast real-time update via SSE
-        $this->broadcast('state_changed', [
-            'repository' => $repository,
-            'old_state' => $old_state,
-            'new_state' => $new_state,
-            'timestamp' => time()
-        ]);
-    }
-}
-```
-
-### **Integration Decision: ADOPT KISS SBI's FSM** 🎯
-
-**Rationale:**
-1. **Git Updater has no existing FSM to conflict with** - Clean slate for integration
-2. **KISS SBI's FSM is production-ready and battle-tested** - Proven reliability
-3. **FSM provides reliability and consistency Git Updater currently lacks** - Major improvement
-4. **Real-time updates are a major UX improvement** - Modern user experience
-5. **State validation prevents installation conflicts** - Enhanced reliability
 
 ---
 
@@ -220,101 +135,30 @@ class PluginInstallationService {
 
 ---
 
-## 🔧 Revised Integration Strategy
+## 🔧 Integration Strategy
 
-### **UPDATED APPROACH: FSM-First Integration**
+### Phase 1: Foundation Integration (Weeks 1-2)
 
-Based on the analysis that **Git Updater has no existing FSM**, the integration strategy is **significantly simplified and enhanced**:
+**Objective**: Establish Git Updater as a service within SBI architecture
 
-### Phase 1: FSM Foundation Integration (Weeks 1-2)
-
-**Objective**: Introduce KISS SBI's FSM architecture to Git Updater as the core foundation
-
-**1.1 Priority File Analysis (COMPLETED)**
+**1.1 Dependency Management**
 ```bash
-# CRITICAL - Copy these files first for FSM analysis
-integration/kiss-sbi-reference/src/Services/StateManager.php     # Core FSM
-integration/kiss-sbi-reference/src/Plugin.php                    # Service container
-integration/kiss-sbi-reference/src/Container.php                 # Dependency injection
-integration/kiss-sbi-reference/src/Admin/RepositoryListTable.php # Advanced UI
-integration/kiss-sbi-reference/src/API/AjaxHandler.php          # Real-time updates
+# Add Git Updater as dependency
+composer require afragen/git-updater
 ```
 
-**1.2 FSM Integration (NEW PRIORITY)**
+**1.2 Service Registration**
 ```php
-// Create Git Updater FSM States (extends KISS SBI states)
-class GitUpdaterStateManager extends StateManager {
-    // Git Updater specific states
-    const GIT_UPDATER_INSTALLING = 'git_updater_installing';
-    const GIT_UPDATER_UPDATING = 'git_updater_updating';
-    const GIT_UPDATER_MANAGED = 'git_updater_managed';
-    const UPDATE_AVAILABLE = 'update_available';
-    const BRANCH_SWITCHING = 'branch_switching';
-    const INSTALLATION_FAILED = 'installation_failed';
-    const UPDATE_FAILED = 'update_failed';
-
-    protected function init_git_updater_transitions(): void {
-        // Installation workflow
-        $this->add_transition(self::AVAILABLE, self::GIT_UPDATER_INSTALLING);
-        $this->add_transition(self::GIT_UPDATER_INSTALLING, self::INSTALLED_INACTIVE);
-        $this->add_transition(self::GIT_UPDATER_INSTALLING, self::INSTALLATION_FAILED);
-
-        // Update workflow
-        $this->add_transition(self::INSTALLED_INACTIVE, self::GIT_UPDATER_UPDATING);
-        $this->add_transition(self::INSTALLED_ACTIVE, self::GIT_UPDATER_UPDATING);
-        $this->add_transition(self::GIT_UPDATER_UPDATING, self::INSTALLED_ACTIVE);
-        $this->add_transition(self::GIT_UPDATER_UPDATING, self::UPDATE_FAILED);
-
-        // Branch switching workflow
-        $this->add_transition(self::INSTALLED_ACTIVE, self::BRANCH_SWITCHING);
-        $this->add_transition(self::BRANCH_SWITCHING, self::INSTALLED_ACTIVE);
-        $this->add_transition(self::BRANCH_SWITCHING, self::ERROR);
-
-        // Error recovery
-        $this->add_transition(self::INSTALLATION_FAILED, self::AVAILABLE);
-        $this->add_transition(self::UPDATE_FAILED, self::INSTALLED_ACTIVE);
-    }
-}
+// In Plugin.php register_services()
+$this->container->singleton(GitUpdaterIntegrationService::class, function($container) {
+    return new GitUpdaterIntegrationService(
+        $container->get(StateManager::class),
+        $container->get(GitHubService::class)
+    );
+});
 ```
 
-**1.3 Service Registration (REVISED)**
-```php
-// In Git Updater's main plugin file - integrate KISS SBI services
-class GitUpdaterWithFSM {
-    private $container;
-    private $state_manager;
-
-    public function __construct() {
-        // Initialize KISS SBI's container pattern
-        $this->container = new Container();
-        $this->register_fsm_services();
-    }
-
-    private function register_fsm_services() {
-        // Register FSM as core service
-        $this->container->singleton(GitUpdaterStateManager::class, function($container) {
-            return new GitUpdaterStateManager();
-        });
-
-        // Register Git Updater integration service
-        $this->container->singleton(GitUpdaterIntegrationService::class, function($container) {
-            return new GitUpdaterIntegrationService(
-                $container->get(GitUpdaterStateManager::class),
-                $container->get(GitHubService::class)
-            );
-        });
-
-        // Register enhanced UI components
-        $this->container->singleton(GitUpdaterRepositoryListTable::class, function($container) {
-            return new GitUpdaterRepositoryListTable(
-                $container->get(GitUpdaterStateManager::class)
-            );
-        });
-    }
-}
-```
-
-**1.4 Create GitUpdaterIntegrationService (ENHANCED WITH FSM)**
+**1.3 Create GitUpdaterIntegrationService**
 ```php
 namespace SBI\Services;
 
@@ -322,285 +166,106 @@ class GitUpdaterIntegrationService {
     private $git_updater_install;
     private $state_manager;
     private $github_service;
-
-    public function __construct(GitUpdaterStateManager $state_manager, GitHubService $github_service) {
+    
+    public function __construct(StateManager $state_manager, GitHubService $github_service) {
         $this->state_manager = $state_manager;
         $this->github_service = $github_service;
-
-        // Access Git Updater via Singleton pattern (existing Git Updater code)
+        
+        // Access Git Updater via Singleton pattern
         $this->git_updater_install = \Fragen\Singleton::get_instance(
-            'Fragen\Git_Updater\Install',
+            'Fragen\Git_Updater\Install', 
             $this
         );
-
-        // Initialize FSM event listeners
-        $this->init_fsm_listeners();
-    }
-
-    private function init_fsm_listeners() {
-        // Listen for FSM state changes and update Git Updater accordingly
-        add_action('git_updater_state_changed', [$this, 'handle_state_change'], 10, 3);
-        add_action('git_updater_installation_progress', [$this, 'broadcast_progress'], 10, 2);
     }
     
     public function install_via_git_updater($repo_url, $branch = 'main') {
-        try {
-            // Parse repository URL
-            $headers = $this->parse_repo_url($repo_url);
-
-            // FSM: Transition to installing state with validation
-            $this->state_manager->transition($repo_url, GitUpdaterStateManager::GIT_UPDATER_INSTALLING);
-
-            // Broadcast installation start
-            $this->state_manager->broadcast('git_updater_installation_started', [
+        // Parse repository URL
+        $headers = $this->parse_repo_url($repo_url);
+        
+        // Update FSM state
+        $this->state_manager->transition($repo_url, StateManager::GIT_UPDATER_INSTALLING);
+        
+        // Prepare Git Updater configuration
+        $config = [
+            'git_updater_api' => $headers['api'], // github, gitlab, etc.
+            'git_updater_repo' => $headers['owner_repo'],
+            'git_updater_branch' => $branch,
+            'git_updater_install_repo' => $headers['repo']
+        ];
+        
+        // Execute installation via Git Updater
+        $result = $this->git_updater_install->install('plugin', $config);
+        
+        // Update FSM based on result
+        if ($result) {
+            $this->state_manager->transition($repo_url, StateManager::INSTALLED_INACTIVE);
+            $this->state_manager->broadcast('git_updater_install_success', [
                 'repository' => $repo_url,
-                'branch' => $branch,
-                'timestamp' => time()
+                'method' => 'git_updater'
             ]);
-
-            // Prepare Git Updater configuration
-            $config = [
-                'git_updater_api' => $headers['api'], // github, gitlab, etc.
-                'git_updater_repo' => $headers['owner_repo'],
-                'git_updater_branch' => $branch,
-                'git_updater_install_repo' => $headers['repo']
-            ];
-
-            // Execute installation via Git Updater (existing code)
-            $result = $this->git_updater_install->install('plugin', $config);
-
-            // FSM: Update state based on result with validation
-            if ($result) {
-                $this->state_manager->transition($repo_url, GitUpdaterStateManager::INSTALLED_INACTIVE);
-                $this->state_manager->broadcast('git_updater_install_success', [
-                    'repository' => $repo_url,
-                    'method' => 'git_updater',
-                    'branch' => $branch,
-                    'timestamp' => time()
-                ]);
-            } else {
-                $this->state_manager->transition($repo_url, GitUpdaterStateManager::INSTALLATION_FAILED);
-                $this->state_manager->broadcast('git_updater_install_error', [
-                    'repository' => $repo_url,
-                    'error' => 'Installation failed via Git Updater',
-                    'timestamp' => time()
-                ]);
-            }
-
-            return $result;
-
-        } catch (InvalidStateTransitionException $e) {
-            // FSM prevented invalid state transition
+        } else {
+            $this->state_manager->transition($repo_url, StateManager::ERROR);
             $this->state_manager->broadcast('git_updater_install_error', [
                 'repository' => $repo_url,
-                'error' => 'Invalid state transition: ' . $e->getMessage(),
-                'timestamp' => time()
+                'error' => 'Installation failed'
             ]);
-            return false;
         }
+        
+        return $result;
     }
     
     public function check_for_updates($plugin_file) {
-        try {
-            // Use Git Updater's existing update checking
-            $has_update = $this->git_updater_has_update($plugin_file);
-
-            if ($has_update) {
-                // FSM: Transition to update available state
-                $this->state_manager->transition($plugin_file, GitUpdaterStateManager::UPDATE_AVAILABLE);
-                $this->state_manager->broadcast('git_updater_update_available', [
-                    'plugin_file' => $plugin_file,
-                    'timestamp' => time()
-                ]);
-            }
-
-            return $has_update;
-
-        } catch (Exception $e) {
-            error_log('Git Updater update check failed: ' . $e->getMessage());
-            return false;
-        }
+        // Use Git Updater's update checking
+        // Integrate with SBI's state management
     }
-
+    
     public function switch_branch($plugin_file, $new_branch) {
-        try {
-            // FSM: Transition to branch switching state
-            $this->state_manager->transition($plugin_file, GitUpdaterStateManager::BRANCH_SWITCHING);
-
-            // Broadcast branch switch start
-            $this->state_manager->broadcast('git_updater_branch_switch_started', [
-                'plugin_file' => $plugin_file,
-                'new_branch' => $new_branch,
-                'timestamp' => time()
-            ]);
-
-            // Use Git Updater's existing branch switching
-            $result = $this->git_updater_switch_branch($plugin_file, $new_branch);
-
-            // FSM: Update state based on result
-            if ($result) {
-                $this->state_manager->transition($plugin_file, GitUpdaterStateManager::INSTALLED_ACTIVE);
-                $this->state_manager->broadcast('git_updater_branch_switched', [
-                    'plugin_file' => $plugin_file,
-                    'new_branch' => $new_branch,
-                    'timestamp' => time()
-                ]);
-            } else {
-                $this->state_manager->transition($plugin_file, GitUpdaterStateManager::ERROR);
-                $this->state_manager->broadcast('git_updater_branch_switch_failed', [
-                    'plugin_file' => $plugin_file,
-                    'new_branch' => $new_branch,
-                    'error' => 'Branch switch failed',
-                    'timestamp' => time()
-                ]);
-            }
-
-            return $result;
-
-        } catch (InvalidStateTransitionException $e) {
-            $this->state_manager->broadcast('git_updater_branch_switch_error', [
-                'plugin_file' => $plugin_file,
-                'error' => 'Invalid state transition: ' . $e->getMessage(),
-                'timestamp' => time()
-            ]);
-            return false;
-        }
-    }
-
-    public function handle_state_change($repository, $old_state, $new_state) {
-        // Handle FSM state changes and update Git Updater's internal state
-        // This bridges KISS SBI's FSM with Git Updater's existing state management
-
-        switch ($new_state) {
-            case GitUpdaterStateManager::INSTALLED_ACTIVE:
-                // Update Git Updater's options to reflect active state
-                $this->update_git_updater_options($repository, 'active');
-                break;
-
-            case GitUpdaterStateManager::INSTALLATION_FAILED:
-                // Clean up any partial installation artifacts
-                $this->cleanup_failed_installation($repository);
-                break;
-
-            case GitUpdaterStateManager::UPDATE_AVAILABLE:
-                // Trigger Git Updater's update notification system
-                $this->trigger_update_notification($repository);
-                break;
-        }
-    }
-
-    public function broadcast_progress($repository, $progress_data) {
-        // Broadcast installation/update progress via SSE
-        $this->state_manager->broadcast('git_updater_progress', [
-            'repository' => $repository,
-            'progress' => $progress_data,
-            'timestamp' => time()
-        ]);
+        // Use Git Updater's branch switching
+        // Update FSM state accordingly
     }
 }
 ```
 
-**1.5 Key Integration Benefits (ENHANCED)**
-
-**FSM Brings Major Improvements to Git Updater:**
-
-1. **Reliability** - State validation prevents installation conflicts and undefined states
-2. **User Experience** - Real-time progress updates via SSE instead of page reloads
-3. **Error Handling** - Comprehensive error states and recovery mechanisms
-4. **Batch Operations** - FSM enables safe concurrent operations on multiple repositories
-5. **State Persistence** - Centralized state storage survives page refreshes and browser sessions
-6. **Debugging** - Complete state transition history for troubleshooting
-7. **Extensibility** - Clean hooks for adding new states and transitions
-
-**Before Integration (Git Updater):**
+**1.4 Extend StateManager for Git Updater States**
 ```php
-// Basic installation with no state tracking
-if ($upgrader && $upgrader->install($url)) {
-    // Success - but user has no progress visibility
-    (new Branch())->set_branch_on_install(self::$install);
-} else {
-    // Failure - no error state or recovery
-    return false;
+// Add new states to StateManager
+const GIT_UPDATER_INSTALLING = 'git_updater_installing';
+const GIT_UPDATER_UPDATING = 'git_updater_updating';
+const GIT_UPDATER_MANAGED = 'git_updater_managed';
+const UPDATE_AVAILABLE = 'update_available';
+const BRANCH_SWITCHING = 'branch_switching';
+
+// Add transition rules
+protected function init_transitions(): void {
+    // Existing transitions...
+    
+    // Git Updater specific transitions
+    $this->add_transition(self::AVAILABLE, self::GIT_UPDATER_INSTALLING);
+    $this->add_transition(self::GIT_UPDATER_INSTALLING, self::INSTALLED_INACTIVE);
+    $this->add_transition(self::GIT_UPDATER_INSTALLING, self::ERROR);
+    $this->add_transition(self::INSTALLED_INACTIVE, self::GIT_UPDATER_UPDATING);
+    $this->add_transition(self::INSTALLED_ACTIVE, self::GIT_UPDATER_UPDATING);
+    $this->add_transition(self::GIT_UPDATER_UPDATING, self::INSTALLED_ACTIVE);
+    $this->add_transition(self::INSTALLED_ACTIVE, self::BRANCH_SWITCHING);
+    $this->add_transition(self::BRANCH_SWITCHING, self::INSTALLED_ACTIVE);
 }
 ```
 
-**After Integration (Git Updater + KISS SBI FSM):**
+### Phase 2: UI Integration (Weeks 3-4)
+
+**Objective**: Enhance SBI's UI to support Git Updater functionality
+
+**2.1 Extend RepositoryListTable**
 ```php
-// FSM-driven installation with full state management
-$this->state_manager->transition($repo_url, GitUpdaterStateManager::GIT_UPDATER_INSTALLING);
-// User sees real-time "Installing..." status
-
-$result = $this->git_updater_install->install('plugin', $config);
-// User sees progress updates via SSE
-
-if ($result) {
-    $this->state_manager->transition($repo_url, GitUpdaterStateManager::INSTALLED_INACTIVE);
-    // User sees "Installation Complete" with activation option
-} else {
-    $this->state_manager->transition($repo_url, GitUpdaterStateManager::INSTALLATION_FAILED);
-    // User sees error state with retry option
-}
-```
-
-### Phase 2: UI Replacement (Weeks 3-4)
-
-**Objective**: Replace Git Updater's basic forms with KISS SBI's advanced UI components
-
-**MAJOR CHANGE**: Since Git Updater has no FSM, we can **completely replace** its basic installation interface with KISS SBI's advanced components without conflicts.
-
-**2.1 Replace Git Updater's Basic Forms with Advanced List Table**
-
-**Current Git Updater Interface (BASIC):**
-```php
-// Git Updater's current simple form (Install.php)
-public function create_form($type) {
-    ?>
-    <form method="post">
-        <?php settings_fields('git_updater_install'); ?>
-        <input type="text" name="git_updater_repo" placeholder="Repository URL" />
-        <input type="text" name="git_updater_branch" placeholder="Branch" />
-        <select name="git_updater_api">
-            <option value="github">GitHub</option>
-            <option value="gitlab">GitLab</option>
-        </select>
-        <?php submit_button('Install Plugin'); ?>
-    </form>
-    <?php
-}
-```
-
-**New KISS SBI Advanced Interface (ENHANCED):**
-```php
-// Replace with GitUpdaterRepositoryListTable
-class GitUpdaterRepositoryListTable extends WP_List_Table {
-    private $state_manager;
-
-    protected function get_columns() {
-        return [
-            'repository' => 'Repository',
-            'status' => 'Status',
-            'current_branch' => 'Branch',
-            'last_update' => 'Last Update',
-            'actions' => 'Actions'
-        ];
-    }
-
-    protected function column_status($item) {
-        $state = $this->state_manager->get_state($item['repository_url']);
-
-        switch ($state) {
-            case GitUpdaterStateManager::GIT_UPDATER_INSTALLING:
-                return '<span class="status-installing">⏳ Installing...</span>';
-            case GitUpdaterStateManager::INSTALLED_ACTIVE:
-                return '<span class="status-active">✅ Active</span>';
-            case GitUpdaterStateManager::UPDATE_AVAILABLE:
-                return '<span class="status-update">🔄 Update Available</span>';
-            case GitUpdaterStateManager::INSTALLATION_FAILED:
-                return '<span class="status-error">❌ Installation Failed</span>';
-            default:
-                return '<span class="status-available">📦 Available</span>';
-        }
-    }
+// Add Git Updater columns
+protected function get_columns() {
+    return array_merge(parent::get_columns(), [
+        'installation_method' => 'Installation Method',
+        'git_updater_status' => 'Git Updater Status',
+        'update_available' => 'Updates Available',
+        'current_branch' => 'Current Branch',
+        'git_updater_actions' => 'Git Updater Actions'
+    ]);
 }
 
 protected function column_installation_method($item) {
@@ -749,47 +414,7 @@ class GitUpdaterRepositoryFSM extends RepositoryFSM {
 
 ---
 
-## � **FSM Integration Impact Analysis**
-
-### **Before Integration: Git Updater Limitations**
-
-| Issue | Current Git Updater | Impact |
-|-------|-------------------|---------|
-| **No State Tracking** | Scattered WordPress options | Users lose installation progress on page refresh |
-| **No Progress Updates** | Basic form submission | Users don't know if installation is working |
-| **No Error Recovery** | Failed installs leave undefined state | Users must manually clean up failed installations |
-| **No Batch Operations** | One-at-a-time installation | Inefficient for multiple repositories |
-| **No Real-time Updates** | Page reloads required | Poor user experience |
-| **No Installation History** | No tracking of what was installed when | Difficult to troubleshoot issues |
-
-### **After Integration: FSM-Enhanced Git Updater**
-
-| Feature | Enhanced Git Updater | Benefit |
-|---------|-------------------|---------|
-| **Centralized State Management** | KISS SBI StateManager | Complete visibility into all plugin states |
-| **Real-time Progress** | SSE broadcasting | Users see live installation progress |
-| **Error Recovery** | Validated state transitions | Failed installations can be retried cleanly |
-| **Batch Operations** | FSM prevents conflicts | Install multiple repositories simultaneously |
-| **Live UI Updates** | No page reloads needed | Modern, responsive user experience |
-| **Complete History** | State transition logging | Full audit trail of all operations |
-
-### **Quantified Improvements**
-
-**User Experience:**
-- **90% Faster Workflow** - No page reloads, real-time updates
-- **95% Fewer Failed Installations** - State validation prevents conflicts
-- **100% Progress Visibility** - Users always know what's happening
-- **Unlimited Batch Operations** - Install multiple repositories at once
-
-**Developer Experience:**
-- **Zero State Management Code** - FSM handles all state complexity
-- **Comprehensive Error Handling** - Built-in error states and recovery
-- **Easy Extensibility** - Add new states and transitions as needed
-- **Complete Testing Coverage** - FSM provides predictable behavior
-
----
-
-## �🚀 Implementation Benefits
+## 🚀 Implementation Benefits
 
 ### For Users
 
@@ -1099,40 +724,27 @@ This integration positions KISS SBI as the **premier WordPress plugin management
 
 ---
 
-## 🛣 Revised Roadmap (FSM-First Approach)
+## 🛣 Roadmap
 
-### Phase 1: FSM Foundation (Weeks 1-2) ✅ **SIMPLIFIED & ENHANCED**
-- **COPY KISS SBI FILES** ✅ In Progress
-- **Integrate StateManager** - Core FSM implementation
-- **Create GitUpdaterStateManager** - Extended states for Git Updater workflows
-- **Replace Git Updater's scattered state management** - Centralized FSM
-- **Basic real-time updates via SSE** - Immediate UX improvement
+### Phase 1: Foundation (Weeks 1-2) ✅ Ready to Start
+- Git Updater service integration
+- Basic FSM state management
+- Core installation functionality
 
-### Phase 2: UI Replacement (Weeks 3-4) ✅ **MAJOR UPGRADE**
-- **Replace Git Updater's basic forms** - Advanced List Table interface
-- **Real-time installation progress** - SSE-powered updates
-- **Batch operation capabilities** - Multiple repository management
-- **Enhanced error handling** - FSM-driven error states and recovery
+### Phase 2: UI Enhancement (Weeks 3-4)
+- Enhanced list table with Git Updater columns
+- Installation method selection
+- Real-time status updates
 
-### Phase 3: Advanced Features (Weeks 5-6) ✅ **ENHANCED SCOPE**
-- **Branch management interface** - Visual branch switching
-- **Bulk operations dashboard** - Mass installation and updates
-- **Private repository support** - Secure token management
-- **Installation history and analytics** - Complete audit trail
+### Phase 3: Advanced Features (Weeks 5-6)
+- Branch management interface
+- Bulk operations
+- Private repository support
 
-### Phase 4: Polish & Launch (Weeks 7-8) ✅ **PRODUCTION READY**
-- **Comprehensive FSM testing** - All state transitions validated
-- **Performance optimization** - SSE and batch operation tuning
-- **Migration tools** - Seamless transition from old Git Updater interface
-- **Documentation and training** - User guides for new FSM-powered features
-
-### **Key Advantages of FSM-First Approach:**
-
-1. **No Conflicts** - Git Updater has no existing FSM to work around
-2. **Immediate Benefits** - Real-time updates from day one
-3. **Simplified Integration** - Clean slate for implementing KISS SBI patterns
-4. **Enhanced Reliability** - State validation prevents installation conflicts
-5. **Future-Proof** - Extensible FSM foundation for advanced features
+### Phase 4: Polish & Launch (Weeks 7-8)
+- Comprehensive testing
+- Performance optimization
+- Documentation and user guides
 
 ### Future Enhancements (Post-Launch)
 - **Multi-site Support**: Network admin interface for bulk management
@@ -1267,44 +879,7 @@ class CustomGitUpdaterService extends GitUpdaterIntegrationService {
 }
 ```
 
----
-
-## 🎯 **UPDATED CONCLUSION: FSM Game-Changer**
-
-The discovery that **Git Updater has no existing FSM** transforms this integration from a complex merge into a **revolutionary upgrade**. By adopting KISS SBI's proven FSM architecture, Git Updater gains:
-
-### **Immediate Transformational Benefits:**
-
-1. **🚀 Modern User Experience** - Real-time updates, progress tracking, batch operations
-2. **🛡️ Enhanced Reliability** - State validation prevents conflicts and undefined states
-3. **⚡ Performance Boost** - No page reloads, efficient state management
-4. **🔧 Developer Experience** - Clean, extensible architecture with comprehensive testing
-5. **📈 Future-Proof Foundation** - Extensible FSM supports unlimited new features
-
-### **Integration Complexity: SIGNIFICANTLY REDUCED**
-
-- **No State Management Conflicts** - Clean slate for FSM implementation
-- **No Legacy Code Refactoring** - Direct replacement of basic forms
-- **No Backward Compatibility Issues** - Existing Git Updater functionality preserved
-- **No Complex Migration** - Seamless transition to enhanced interface
-
-### **Expected Impact:**
-
-**For Git Updater Users:**
-- **10x Better User Experience** - From basic forms to modern, real-time interface
-- **Zero Learning Curve** - Familiar WordPress admin patterns
-- **Unlimited Scalability** - Batch operations for multiple repositories
-- **Complete Reliability** - FSM prevents installation failures and conflicts
-
-**For Git Updater Development:**
-- **Modern Architecture Foundation** - Service container, dependency injection, FSM
-- **Comprehensive Testing** - Predictable state behavior enables thorough testing
-- **Easy Feature Addition** - FSM provides clean hooks for new functionality
-- **Community Contribution** - Well-documented, extensible codebase
-
-**Status**: **READY FOR IMPLEMENTATION** ✅
-**Next Step**: **Analyze copied KISS SBI files and begin FSM integration**
-**Timeline**: **8-week implementation cycle (SIMPLIFIED)**
-**Expected Launch**: **Q4 2025**
-**Document Updated**: **August 29, 2025 - FSM Analysis Complete**
-**Integration Approach**: **FSM-First Revolutionary Upgrade**
+**Status**: Ready for implementation
+**Next Step**: Begin Phase 1 development
+**Timeline**: 8-week implementation cycle
+**Expected Launch**: Q4 2025
