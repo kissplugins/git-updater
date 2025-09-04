@@ -60,6 +60,10 @@ class FSMBootstrap {
         $enhanced_admin = $this->container->get(EnhancedAdminPage::class);
         $enhanced_admin->init();
 
+        // Add redirect to enhanced UI for first-time users
+        add_action('admin_init', [$this, 'maybe_redirect_to_enhanced_ui']);
+        add_action('admin_init', [$this, 'handle_reset_redirect']);
+
         // Log FSM initialization
         error_log('Git Updater FSM: System initialized successfully');
     }
@@ -403,5 +407,64 @@ class FSMBootstrap {
      */
     public function get_state_manager(): GitUpdaterStateManager {
         return $this->state_manager;
+    }
+
+    /**
+     * Maybe redirect to enhanced UI on first visit.
+     */
+    public function maybe_redirect_to_enhanced_ui(): void {
+        // Only redirect on Git Updater settings page
+        if (!$this->is_git_updater_settings_page()) {
+            return;
+        }
+
+        // Check if user has seen the enhanced UI before
+        $user_id = get_current_user_id();
+        $seen_enhanced_ui = get_user_meta($user_id, 'git_updater_seen_enhanced_ui', true);
+
+        // If they haven't seen it, redirect to Enhanced Install tab
+        if (!$seen_enhanced_ui) {
+            // Mark as seen
+            update_user_meta($user_id, 'git_updater_seen_enhanced_ui', true);
+
+            // Redirect to Enhanced Install tab
+            $redirect_url = admin_url('options-general.php?page=git-updater&tab=git_updater_enhanced_install');
+
+            // Only redirect if not already on enhanced tab and not doing AJAX
+            $current_tab = $_GET['tab'] ?? '';
+            if (!wp_doing_ajax() && !in_array($current_tab, ['git_updater_enhanced_install', 'git_updater_repository_manager'])) {
+                wp_redirect($redirect_url);
+                exit;
+            }
+        }
+    }
+
+    /**
+     * Check if we're on the Git Updater settings page.
+     */
+    private function is_git_updater_settings_page(): bool {
+        global $pagenow;
+
+        return (
+            $pagenow === 'options-general.php' &&
+            isset($_GET['page']) &&
+            $_GET['page'] === 'git-updater'
+        );
+    }
+
+    /**
+     * Handle reset redirect parameter for testing.
+     */
+    public function handle_reset_redirect(): void {
+        // Check for reset parameter
+        if (isset($_GET['reset_enhanced_redirect']) && current_user_can('manage_options')) {
+            $user_id = get_current_user_id();
+            delete_user_meta($user_id, 'git_updater_seen_enhanced_ui');
+
+            // Redirect back to Git Updater settings without the reset parameter
+            $redirect_url = admin_url('options-general.php?page=git-updater');
+            wp_redirect($redirect_url);
+            exit;
+        }
     }
 }

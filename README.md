@@ -20,7 +20,8 @@
 This enhanced version of Git Updater integrates the **Finite State Machine (FSM)** architecture from KISS Smart Batch Installer, providing:
 
 ### ✨ **Enhanced Features**
-- **🔄 Real-time Status Updates** - Live plugin state monitoring without page reloads
+- **� Direct Enhanced UI Access** - Bypasses Freemius onboarding, goes straight to enhanced interface
+- **�🔄 Real-time Status Updates** - Live plugin state monitoring without page reloads
 - **📊 Advanced List Table Interface** - Professional repository management
 - **⚡ Batch Operations** - Install, update, activate multiple repositories simultaneously
 - **🎯 State Management** - Comprehensive plugin lifecycle tracking

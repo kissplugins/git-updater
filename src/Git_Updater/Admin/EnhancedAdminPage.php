@@ -64,9 +64,11 @@ class EnhancedAdminPage {
         // Register the enhanced installation tab
         add_filter('gu_add_settings_tabs', [$this, 'add_enhanced_tabs']);
         add_action('gu_add_admin_page', [$this, 'add_enhanced_admin_page'], 10, 2);
-        
+
         // Register AJAX handlers
         $this->ajax_handler->register_hooks();
+
+        // Redirect is handled by FSMBootstrap
     }
 
     /**
@@ -371,4 +373,6 @@ class EnhancedAdminPage {
 
         return '';
     }
+
+
 }
