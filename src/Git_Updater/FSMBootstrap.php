@@ -10,6 +10,9 @@ namespace Fragen\Git_Updater;
 use Fragen\Git_Updater\Container;
 use Fragen\Git_Updater\FSM\GitUpdaterStateManager;
 use Fragen\Git_Updater\Services\GitUpdaterIntegrationService;
+use Fragen\Git_Updater\API\GitUpdaterAjaxHandler;
+use Fragen\Git_Updater\Admin\GitUpdaterRepositoryListTable;
+use Fragen\Git_Updater\Admin\EnhancedAdminPage;
 
 /**
  * FSM Bootstrap class.
@@ -46,13 +49,17 @@ class FSMBootstrap {
     public function init(): void {
         // Initialize state manager
         $this->state_manager = $this->container->get(GitUpdaterStateManager::class);
-        
+
         // Register WordPress hooks
         $this->register_hooks();
-        
+
         // Initialize SSE endpoint
         $this->init_sse_endpoint();
-        
+
+        // Initialize enhanced admin page
+        $enhanced_admin = $this->container->get(EnhancedAdminPage::class);
+        $enhanced_admin->init();
+
         // Log FSM initialization
         error_log('Git Updater FSM: System initialized successfully');
     }
@@ -62,14 +69,38 @@ class FSMBootstrap {
      */
     private function register_fsm_services(): void {
         // Register FSM as core service
-        $this->container->singleton(GitUpdaterStateManager::class, function($container) {
+        $this->container->singleton(GitUpdaterStateManager::class, function() {
             return new GitUpdaterStateManager();
         });
-        
+
         // Register Git Updater integration service
         $this->container->singleton(GitUpdaterIntegrationService::class, function($container) {
             return new GitUpdaterIntegrationService(
                 $container->get(GitUpdaterStateManager::class)
+            );
+        });
+
+        // Register AJAX handler
+        $this->container->singleton(GitUpdaterAjaxHandler::class, function($container) {
+            return new GitUpdaterAjaxHandler(
+                $container->get(GitUpdaterStateManager::class),
+                $container->get(GitUpdaterIntegrationService::class)
+            );
+        });
+
+        // Register repository list table
+        $this->container->singleton(GitUpdaterRepositoryListTable::class, function($container) {
+            return new GitUpdaterRepositoryListTable(
+                $container->get(GitUpdaterStateManager::class)
+            );
+        });
+
+        // Register enhanced admin page
+        $this->container->singleton(EnhancedAdminPage::class, function($container) {
+            return new EnhancedAdminPage(
+                $container->get(GitUpdaterStateManager::class),
+                $container->get(GitUpdaterIntegrationService::class),
+                $container->get(GitUpdaterAjaxHandler::class)
             );
         });
     }

@@ -307,30 +307,254 @@
     }
 }
 
+/* Enhanced Admin Page Styles */
+.git-updater-enhanced-install,
+.git-updater-repository-manager {
+    max-width: 1200px;
+}
+
+.git-updater-organization-section,
+.git-updater-manual-section {
+    background: #fff;
+    border: 1px solid #ccd0d4;
+    border-radius: 4px;
+    padding: 20px;
+    margin-bottom: 20px;
+}
+
+.git-updater-organization-section h3,
+.git-updater-manual-section h3 {
+    margin-top: 0;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 10px;
+}
+
+/* Repository List Container */
+#git-updater-repository-list-container {
+    background: #fff;
+    border: 1px solid #ccd0d4;
+    border-radius: 4px;
+    padding: 20px;
+    margin-bottom: 20px;
+}
+
+.git-updater-repository-table-wrapper {
+    position: relative;
+}
+
+/* Loading Overlay */
+#git-updater-loading-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(255, 255, 255, 0.9);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+}
+
+.git-updater-spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid #f3f3f3;
+    border-top: 4px solid #007cba;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-bottom: 20px;
+}
+
+/* Filter Controls */
+.git-updater-filters {
+    background: #f9f9f9;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 15px;
+    margin-bottom: 20px;
+    overflow: hidden;
+}
+
+.git-updater-filters .alignleft,
+.git-updater-filters .alignright {
+    display: inline-block;
+}
+
+.git-updater-filters select {
+    margin-right: 10px;
+    vertical-align: top;
+}
+
+/* Batch Operations */
+.git-updater-batch-operations {
+    background: #f9f9f9;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 20px;
+}
+
+.git-updater-batch-buttons {
+    margin-top: 15px;
+}
+
+.git-updater-batch-buttons button {
+    margin-right: 10px;
+    margin-bottom: 5px;
+}
+
+.git-updater-batch-buttons button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Installation Method Badges */
+.git-updater-badge,
+.standard-badge {
+    display: inline-block;
+    padding: 3px 8px;
+    border-radius: 3px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.git-updater-badge {
+    background-color: #007cba;
+    color: white;
+}
+
+.standard-badge {
+    background-color: #72aee6;
+    color: white;
+}
+
+/* Enhanced Table Styles */
+.git-updater-repository-table-wrapper .wp-list-table {
+    border: 1px solid #ccd0d4;
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.git-updater-repository-table-wrapper .wp-list-table th {
+    background: #f9f9f9;
+    border-bottom: 1px solid #ccd0d4;
+    font-weight: 600;
+}
+
+.git-updater-repository-table-wrapper .wp-list-table td {
+    border-bottom: 1px solid #f0f0f1;
+    vertical-align: middle;
+}
+
+.git-updater-repository-table-wrapper .wp-list-table tr:hover {
+    background-color: #f9f9f9;
+}
+
+/* Action Buttons in Table */
+.git-updater-repository-table-wrapper .button {
+    margin-right: 5px;
+    margin-bottom: 3px;
+    font-size: 12px;
+    padding: 4px 8px;
+    height: auto;
+    line-height: 1.4;
+}
+
+/* Branch Switch Icon */
+.git-updater-switch-branch-btn .dashicons {
+    font-size: 14px;
+    width: 14px;
+    height: 14px;
+    vertical-align: middle;
+}
+
+/* Progress Container */
+.git-updater-progress-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: #f0f0f1;
+    z-index: 10;
+}
+
+.git-updater-progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, #007cba, #72aee6);
+    width: 0%;
+    transition: width 0.3s ease;
+}
+
+/* Enhanced Notices */
+.notice.git-updater-notice {
+    border-left-width: 4px;
+    padding: 12px;
+}
+
+.notice.git-updater-notice p {
+    margin: 0;
+    font-weight: 500;
+}
+
+/* Repository Description */
+.git-updater-repository-table-wrapper .column-description {
+    max-width: 300px;
+}
+
+.git-updater-repository-table-wrapper .column-description em {
+    color: #666;
+    font-style: italic;
+}
+
+/* Last Updated Column */
+.git-updater-repository-table-wrapper .column-last_updated time {
+    color: #666;
+    font-size: 12px;
+}
+
 /* Dark Mode Support */
 @media (prefers-color-scheme: dark) {
     .git-updater-repository-row.state-checking {
         background-color: rgba(0, 124, 186, 0.1);
     }
-    
+
     .git-updater-repository-row.state-error,
     .git-updater-repository-row.state-installation-failed,
     .git-updater-repository-row.state-update-failed {
         background-color: rgba(214, 54, 56, 0.1);
     }
-    
+
     .git-updater-repository-row.state-installed-active,
     .git-updater-repository-row.state-git-managed {
         background-color: rgba(0, 163, 42, 0.1);
     }
-    
+
     .git-updater-repository-row.state-git-installing,
     .git-updater-repository-row.state-git-updating,
     .git-updater-repository-row.state-branch-switching {
         background-color: rgba(0, 124, 186, 0.15);
     }
-    
+
     .git-updater-repository-row.state-update-available {
         background-color: rgba(219, 166, 23, 0.1);
+    }
+
+    .git-updater-organization-section,
+    .git-updater-manual-section,
+    #git-updater-repository-list-container {
+        background: #1e1e1e;
+        border-color: #444;
+        color: #fff;
+    }
+
+    .git-updater-filters,
+    .git-updater-batch-operations {
+        background: #2a2a2a;
+        border-color: #444;
+        color: #fff;
     }
 }

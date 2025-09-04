@@ -107,7 +107,7 @@
                 const branch = $btn.data('branch') || 'main';
                 this.installRepository(repoUrl, branch);
             });
-            
+
             // Update button clicks
             $(document).on('click', '.git-updater-update-btn', (e) => {
                 e.preventDefault();
@@ -115,7 +115,23 @@
                 const pluginFile = $btn.data('plugin-file');
                 this.updatePlugin(pluginFile);
             });
-            
+
+            // Activate button clicks
+            $(document).on('click', '.git-updater-activate-btn', (e) => {
+                e.preventDefault();
+                const $btn = $(e.target);
+                const pluginFile = $btn.data('plugin-file');
+                this.activatePlugin(pluginFile);
+            });
+
+            // Deactivate button clicks
+            $(document).on('click', '.git-updater-deactivate-btn', (e) => {
+                e.preventDefault();
+                const $btn = $(e.target);
+                const pluginFile = $btn.data('plugin-file');
+                this.deactivatePlugin(pluginFile);
+            });
+
             // Branch switch clicks
             $(document).on('click', '.git-updater-switch-branch-btn', (e) => {
                 e.preventDefault();
@@ -124,6 +140,17 @@
                 const newBranch = $btn.data('new-branch');
                 this.switchBranch(pluginFile, newBranch);
             });
+
+            // Refresh button clicks
+            $(document).on('click', '.git-updater-refresh-btn', (e) => {
+                e.preventDefault();
+                const $btn = $(e.target);
+                const repoUrl = $btn.data('repo-url');
+                this.refreshRepository(repoUrl);
+            });
+
+            // Enhanced admin page events
+            this.bindEnhancedAdminEvents();
         }
 
         /**
@@ -394,11 +421,351 @@
         }
 
         /**
+         * Bind enhanced admin page events
+         */
+        bindEnhancedAdminEvents() {
+            // Fetch repositories button
+            $(document).on('click', '#git-updater-fetch-repos', (e) => {
+                e.preventDefault();
+                const organization = $('#git-updater-organization').val().trim();
+                if (organization) {
+                    this.fetchRepositories(organization);
+                }
+            });
+
+            // Manual install button
+            $(document).on('click', '#git-updater-manual-install', (e) => {
+                e.preventDefault();
+                const repoUrl = $('#git-updater-manual-repo').val().trim();
+                const branch = $('#git-updater-manual-branch').val().trim() || 'main';
+                if (repoUrl) {
+                    this.installRepository(repoUrl, branch);
+                }
+            });
+
+            // Batch operation buttons
+            $(document).on('click', '#git-updater-batch-install', () => this.batchInstall());
+            $(document).on('click', '#git-updater-batch-update', () => this.batchUpdate());
+            $(document).on('click', '#git-updater-batch-activate', () => this.batchActivate());
+            $(document).on('click', '#git-updater-batch-deactivate', () => this.batchDeactivate());
+            $(document).on('click', '#git-updater-batch-refresh', () => this.batchRefresh());
+
+            // Filter controls
+            $(document).on('click', '#git-updater-apply-filters', () => this.applyFilters());
+            $(document).on('click', '#git-updater-refresh-all', () => this.refreshAll());
+            $(document).on('click', '#git-updater-check-updates', () => this.checkAllUpdates());
+
+            // Checkbox selection handling
+            $(document).on('change', 'input[name="repositories[]"]', () => this.updateBatchButtons());
+            $(document).on('change', '#cb-select-all', () => this.toggleSelectAll());
+        }
+
+        /**
+         * Fetch repositories from organization
+         */
+        fetchRepositories(organization) {
+            console.log(`Git Updater FSM: Fetching repositories for ${organization}`);
+
+            this.showLoading('Fetching repositories...');
+
+            $.ajax({
+                url: gitUpdaterFSM.ajaxUrl,
+                type: 'POST',
+                data: {
+                    action: 'git_updater_fetch_repositories',
+                    nonce: gitUpdaterFSM.nonce,
+                    organization: organization
+                },
+                success: (response) => {
+                    this.hideLoading();
+                    if (response.success) {
+                        this.displayRepositoryList(response.data.repositories);
+                        this.showSuccessMessage(`Found ${response.data.count} repositories`);
+                    } else {
+                        this.showErrorMessage(response.data || 'Failed to fetch repositories');
+                    }
+                },
+                error: (xhr, status, error) => {
+                    this.hideLoading();
+                    this.showErrorMessage('Network error while fetching repositories');
+                }
+            });
+        }
+
+        /**
+         * Activate plugin
+         */
+        activatePlugin(pluginFile) {
+            console.log(`Git Updater FSM: Activating ${pluginFile}`);
+
+            $.ajax({
+                url: gitUpdaterFSM.ajaxUrl,
+                type: 'POST',
+                data: {
+                    action: 'git_updater_activate_plugin',
+                    nonce: gitUpdaterFSM.nonce,
+                    plugin_file: pluginFile
+                },
+                success: (response) => {
+                    if (response.success) {
+                        this.showSuccessMessage('Plugin activated successfully');
+                    } else {
+                        this.showErrorMessage(response.data || 'Activation failed');
+                    }
+                },
+                error: (xhr, status, error) => {
+                    this.showErrorMessage('Network error during activation');
+                }
+            });
+        }
+
+        /**
+         * Deactivate plugin
+         */
+        deactivatePlugin(pluginFile) {
+            console.log(`Git Updater FSM: Deactivating ${pluginFile}`);
+
+            $.ajax({
+                url: gitUpdaterFSM.ajaxUrl,
+                type: 'POST',
+                data: {
+                    action: 'git_updater_deactivate_plugin',
+                    nonce: gitUpdaterFSM.nonce,
+                    plugin_file: pluginFile
+                },
+                success: (response) => {
+                    if (response.success) {
+                        this.showSuccessMessage('Plugin deactivated successfully');
+                    } else {
+                        this.showErrorMessage(response.data || 'Deactivation failed');
+                    }
+                },
+                error: (xhr, status, error) => {
+                    this.showErrorMessage('Network error during deactivation');
+                }
+            });
+        }
+
+        /**
+         * Refresh repository state
+         */
+        refreshRepository(repoUrl) {
+            console.log(`Git Updater FSM: Refreshing ${repoUrl}`);
+
+            $.ajax({
+                url: gitUpdaterFSM.ajaxUrl,
+                type: 'POST',
+                data: {
+                    action: 'git_updater_refresh_repository',
+                    nonce: gitUpdaterFSM.nonce,
+                    repository: repoUrl
+                },
+                success: (response) => {
+                    if (response.success) {
+                        this.showSuccessMessage('Repository refreshed');
+                    } else {
+                        this.showErrorMessage(response.data || 'Refresh failed');
+                    }
+                },
+                error: (xhr, status, error) => {
+                    this.showErrorMessage('Network error during refresh');
+                }
+            });
+        }
+
+        /**
+         * Display repository list
+         */
+        displayRepositoryList(repositories) {
+            const $container = $('#git-updater-repository-list-container');
+            const $list = $('#git-updater-repository-list');
+
+            if (repositories.length === 0) {
+                $list.html('<p>No repositories found.</p>');
+                $container.show();
+                return;
+            }
+
+            // Render repository table
+            $.ajax({
+                url: gitUpdaterFSM.ajaxUrl,
+                type: 'POST',
+                data: {
+                    action: 'git_updater_render_table',
+                    nonce: gitUpdaterFSM.nonce,
+                    repositories: repositories
+                },
+                success: (response) => {
+                    if (response.success) {
+                        $list.html(response.data.html);
+                        $container.show();
+                    } else {
+                        this.showErrorMessage('Failed to render repository table');
+                    }
+                },
+                error: (xhr, status, error) => {
+                    this.showErrorMessage('Network error while rendering table');
+                }
+            });
+        }
+
+        /**
+         * Show loading overlay
+         */
+        showLoading(message = 'Loading...') {
+            const $overlay = $('#git-updater-loading-overlay');
+            $overlay.find('p').text(message);
+            $overlay.show();
+        }
+
+        /**
+         * Hide loading overlay
+         */
+        hideLoading() {
+            $('#git-updater-loading-overlay').hide();
+        }
+
+        /**
+         * Update batch operation buttons based on selection
+         */
+        updateBatchButtons() {
+            const selectedCount = $('input[name="repositories[]"]:checked').length;
+            const $batchButtons = $('.git-updater-batch-buttons button');
+
+            if (selectedCount > 0) {
+                $batchButtons.prop('disabled', false);
+            } else {
+                $batchButtons.prop('disabled', true);
+            }
+        }
+
+        /**
+         * Toggle select all checkboxes
+         */
+        toggleSelectAll() {
+            const isChecked = $('#cb-select-all').prop('checked');
+            $('input[name="repositories[]"]').prop('checked', isChecked);
+            this.updateBatchButtons();
+        }
+
+        /**
+         * Batch install selected repositories
+         */
+        batchInstall() {
+            const selected = this.getSelectedRepositories();
+            if (selected.length === 0) return;
+
+            console.log('Git Updater FSM: Batch installing', selected);
+            this.performBatchOperation('git_updater_batch_install', selected, 'Installing selected repositories...');
+        }
+
+        /**
+         * Batch update selected plugins
+         */
+        batchUpdate() {
+            const selected = this.getSelectedRepositories();
+            if (selected.length === 0) return;
+
+            console.log('Git Updater FSM: Batch updating', selected);
+            this.performBatchOperation('git_updater_batch_update', selected, 'Updating selected plugins...');
+        }
+
+        /**
+         * Batch activate selected plugins
+         */
+        batchActivate() {
+            const selected = this.getSelectedRepositories();
+            if (selected.length === 0) return;
+
+            console.log('Git Updater FSM: Batch activating', selected);
+            this.performBatchOperation('git_updater_batch_activate', selected, 'Activating selected plugins...');
+        }
+
+        /**
+         * Batch deactivate selected plugins
+         */
+        batchDeactivate() {
+            const selected = this.getSelectedRepositories();
+            if (selected.length === 0) return;
+
+            console.log('Git Updater FSM: Batch deactivating', selected);
+            this.performBatchOperation('git_updater_batch_deactivate', selected, 'Deactivating selected plugins...');
+        }
+
+        /**
+         * Batch refresh selected repositories
+         */
+        batchRefresh() {
+            const selected = this.getSelectedRepositories();
+            if (selected.length === 0) return;
+
+            console.log('Git Updater FSM: Batch refreshing', selected);
+            this.performBatchOperation('git_updater_batch_refresh', selected, 'Refreshing selected repositories...');
+        }
+
+        /**
+         * Get selected repository URLs
+         */
+        getSelectedRepositories() {
+            const selected = [];
+            $('input[name="repositories[]"]:checked').each(function() {
+                selected.push($(this).val());
+            });
+            return selected;
+        }
+
+        /**
+         * Perform batch operation
+         */
+        performBatchOperation(action, repositories, loadingMessage) {
+            this.showLoading(loadingMessage);
+
+            $.ajax({
+                url: gitUpdaterFSM.ajaxUrl,
+                type: 'POST',
+                data: {
+                    action: action,
+                    nonce: gitUpdaterFSM.nonce,
+                    repositories: repositories
+                },
+                success: (response) => {
+                    this.hideLoading();
+                    if (response.success) {
+                        this.showSuccessMessage(response.data.message || 'Batch operation completed');
+                    } else {
+                        this.showErrorMessage(response.data || 'Batch operation failed');
+                    }
+                },
+                error: (xhr, status, error) => {
+                    this.hideLoading();
+                    this.showErrorMessage('Network error during batch operation');
+                }
+            });
+        }
+
+        /**
+         * Show success message
+         */
+        showSuccessMessage(message) {
+            // Create or update success notice
+            const $notice = $('<div class="notice notice-success is-dismissible"><p>' + message + '</p></div>');
+            $('.wrap h1').after($notice);
+
+            // Auto-dismiss after 5 seconds
+            setTimeout(() => {
+                $notice.fadeOut(() => $notice.remove());
+            }, 5000);
+        }
+
+        /**
          * Show error message
          */
         showErrorMessage(message) {
-            // TODO: Implement error message UI
-            console.error('Error:', message);
+            // Create or update error notice
+            const $notice = $('<div class="notice notice-error is-dismissible"><p>' + message + '</p></div>');
+            $('.wrap h1').after($notice);
+
+            console.error('Git Updater FSM Error:', message);
         }
 
         /**
