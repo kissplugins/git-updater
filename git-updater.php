@@ -65,6 +65,12 @@ add_action(
 	'plugins_loaded',
 	function () {
 		( new Bootstrap() )->run();
+
+		// Initialize FSM system for Git Updater
+		if ( class_exists( 'Fragen\Git_Updater\FSMBootstrap' ) ) {
+			$fsm_bootstrap = new \Fragen\Git_Updater\FSMBootstrap();
+			$fsm_bootstrap->init();
+		}
 	}
 );
 

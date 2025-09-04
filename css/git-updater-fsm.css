@@ -1,0 +1,336 @@
+/**
+ * Git Updater FSM - Styles for enhanced UI
+ * 
+ * Adapted from KISS SBI's admin.css for Git Updater integration.
+ * Provides modern styling for FSM states and real-time updates.
+ */
+
+/* Repository Row States */
+.git-updater-repository-row {
+    transition: all 0.3s ease;
+    border-left: 4px solid transparent;
+}
+
+.git-updater-repository-row.state-unknown {
+    border-left-color: #ccc;
+}
+
+.git-updater-repository-row.state-checking {
+    border-left-color: #007cba;
+    background-color: rgba(0, 124, 186, 0.05);
+}
+
+.git-updater-repository-row.state-available {
+    border-left-color: #00a32a;
+}
+
+.git-updater-repository-row.state-not-plugin {
+    border-left-color: #dba617;
+}
+
+.git-updater-repository-row.state-error,
+.git-updater-repository-row.state-installation-failed,
+.git-updater-repository-row.state-update-failed {
+    border-left-color: #d63638;
+    background-color: rgba(214, 54, 56, 0.05);
+}
+
+.git-updater-repository-row.state-installed-inactive {
+    border-left-color: #72aee6;
+}
+
+.git-updater-repository-row.state-installed-active,
+.git-updater-repository-row.state-git-managed {
+    border-left-color: #00a32a;
+    background-color: rgba(0, 163, 42, 0.05);
+}
+
+.git-updater-repository-row.state-git-installing,
+.git-updater-repository-row.state-git-updating,
+.git-updater-repository-row.state-branch-switching {
+    border-left-color: #007cba;
+    background-color: rgba(0, 124, 186, 0.1);
+}
+
+.git-updater-repository-row.state-update-available {
+    border-left-color: #dba617;
+    background-color: rgba(219, 166, 23, 0.05);
+}
+
+/* State Labels */
+.git-updater-state {
+    font-weight: 600;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.state-unknown .git-updater-state {
+    background-color: #f0f0f1;
+    color: #646970;
+}
+
+.state-checking .git-updater-state {
+    background-color: #007cba;
+    color: white;
+}
+
+.state-available .git-updater-state {
+    background-color: #00a32a;
+    color: white;
+}
+
+.state-not-plugin .git-updater-state {
+    background-color: #dba617;
+    color: white;
+}
+
+.state-error .git-updater-state,
+.state-installation-failed .git-updater-state,
+.state-update-failed .git-updater-state {
+    background-color: #d63638;
+    color: white;
+}
+
+.state-installed-inactive .git-updater-state {
+    background-color: #72aee6;
+    color: white;
+}
+
+.state-installed-active .git-updater-state,
+.state-git-managed .git-updater-state {
+    background-color: #00a32a;
+    color: white;
+}
+
+.state-git-installing .git-updater-state,
+.state-git-updating .git-updater-state,
+.state-branch-switching .git-updater-state {
+    background-color: #007cba;
+    color: white;
+    animation: pulse 2s infinite;
+}
+
+.state-update-available .git-updater-state {
+    background-color: #dba617;
+    color: white;
+    animation: glow 2s ease-in-out infinite alternate;
+}
+
+/* Animations */
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.7; }
+    100% { opacity: 1; }
+}
+
+@keyframes glow {
+    from { box-shadow: 0 0 5px rgba(219, 166, 23, 0.5); }
+    to { box-shadow: 0 0 20px rgba(219, 166, 23, 0.8); }
+}
+
+/* Progress Bars */
+.git-updater-progress {
+    width: 100%;
+    height: 4px;
+    background-color: #f0f0f1;
+    border-radius: 2px;
+    overflow: hidden;
+    margin-top: 8px;
+}
+
+.git-updater-progress .progress-bar {
+    height: 100%;
+    background-color: #007cba;
+    transition: width 0.3s ease;
+    background-image: linear-gradient(
+        45deg,
+        rgba(255, 255, 255, 0.2) 25%,
+        transparent 25%,
+        transparent 50%,
+        rgba(255, 255, 255, 0.2) 50%,
+        rgba(255, 255, 255, 0.2) 75%,
+        transparent 75%,
+        transparent
+    );
+    background-size: 20px 20px;
+    animation: progress-stripes 1s linear infinite;
+}
+
+@keyframes progress-stripes {
+    0% { background-position: 0 0; }
+    100% { background-position: 20px 0; }
+}
+
+/* Buttons */
+.git-updater-install-btn,
+.git-updater-update-btn,
+.git-updater-switch-branch-btn {
+    margin-right: 8px;
+    margin-bottom: 4px;
+    transition: all 0.2s ease;
+}
+
+.git-updater-install-btn:disabled,
+.git-updater-update-btn:disabled,
+.git-updater-switch-branch-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.git-updater-install-btn.processing,
+.git-updater-update-btn.processing,
+.git-updater-switch-branch-btn.processing {
+    position: relative;
+    color: transparent;
+}
+
+.git-updater-install-btn.processing::after,
+.git-updater-update-btn.processing::after,
+.git-updater-switch-branch-btn.processing::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 16px;
+    height: 16px;
+    margin: -8px 0 0 -8px;
+    border: 2px solid transparent;
+    border-top-color: currentColor;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Branch Selector */
+.git-updater-branch-selector {
+    display: inline-block;
+    margin-left: 8px;
+}
+
+.git-updater-branch-selector select {
+    padding: 4px 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    background-color: white;
+    font-size: 12px;
+}
+
+/* Repository Metadata */
+.git-updater-metadata {
+    font-size: 12px;
+    color: #646970;
+    margin-top: 4px;
+}
+
+.git-updater-metadata .metadata-item {
+    display: inline-block;
+    margin-right: 12px;
+}
+
+.git-updater-metadata .metadata-label {
+    font-weight: 600;
+}
+
+/* Error Messages */
+.git-updater-error-message {
+    background-color: #fcf2f2;
+    border: 1px solid #d63638;
+    border-radius: 4px;
+    padding: 8px 12px;
+    margin-top: 8px;
+    font-size: 12px;
+    color: #d63638;
+}
+
+.git-updater-error-message .error-actions {
+    margin-top: 8px;
+}
+
+.git-updater-error-message .error-actions button {
+    font-size: 11px;
+    padding: 4px 8px;
+    margin-right: 8px;
+}
+
+/* Success Messages */
+.git-updater-success-message {
+    background-color: #f0f6fc;
+    border: 1px solid #00a32a;
+    border-radius: 4px;
+    padding: 8px 12px;
+    margin-top: 8px;
+    font-size: 12px;
+    color: #00a32a;
+}
+
+/* Loading States */
+.git-updater-loading {
+    opacity: 0.7;
+    pointer-events: none;
+}
+
+.git-updater-loading::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(255, 255, 255, 0.8);
+    z-index: 10;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .git-updater-repository-row {
+        font-size: 14px;
+    }
+    
+    .git-updater-install-btn,
+    .git-updater-update-btn,
+    .git-updater-switch-branch-btn {
+        display: block;
+        width: 100%;
+        margin-bottom: 8px;
+    }
+    
+    .git-updater-metadata .metadata-item {
+        display: block;
+        margin-bottom: 4px;
+    }
+}
+
+/* Dark Mode Support */
+@media (prefers-color-scheme: dark) {
+    .git-updater-repository-row.state-checking {
+        background-color: rgba(0, 124, 186, 0.1);
+    }
+    
+    .git-updater-repository-row.state-error,
+    .git-updater-repository-row.state-installation-failed,
+    .git-updater-repository-row.state-update-failed {
+        background-color: rgba(214, 54, 56, 0.1);
+    }
+    
+    .git-updater-repository-row.state-installed-active,
+    .git-updater-repository-row.state-git-managed {
+        background-color: rgba(0, 163, 42, 0.1);
+    }
+    
+    .git-updater-repository-row.state-git-installing,
+    .git-updater-repository-row.state-git-updating,
+    .git-updater-repository-row.state-branch-switching {
+        background-color: rgba(0, 124, 186, 0.15);
+    }
+    
+    .git-updater-repository-row.state-update-available {
+        background-color: rgba(219, 166, 23, 0.1);
+    }
+}
