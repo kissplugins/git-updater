@@ -19,6 +19,13 @@
 
 This enhanced version of Git Updater integrates the **Finite State Machine (FSM)** architecture from KISS Smart Batch Installer, providing:
 
+### 📁 **NEW: Dedicated Admin Menu**
+Access our enhanced features through the dedicated **"KISS SBI x GU"** menu in your WordPress admin sidebar - completely bypassing any Freemius interference!
+
+- **Enhanced Install** - Modern repository installation with real-time progress
+- **Repository Manager** - Manage all Git Updater plugins with live status updates
+- **Batch Operations** - Perform operations on multiple repositories simultaneously
+
 ### ✨ **Enhanced Features**
 - **� Direct Enhanced UI Access** - Bypasses Freemius onboarding, goes straight to enhanced interface
 - **�🔄 Real-time Status Updates** - Live plugin state monitoring without page reloads
@@ -44,14 +51,23 @@ This enhanced version of Git Updater integrates the **Finite State Machine (FSM)
 1. **Download** the enhanced Git Updater
 2. **Upload** to `/wp-content/plugins/git-updater/`
 3. **Activate** the plugin
-4. **Navigate** to `Settings > Git Updater` for the enhanced interface
+4. **Look for "KISS SBI x GU"** in your WordPress admin menu sidebar
 
 ### **Enhanced Interface**
 
-The enhanced Git Updater adds two new admin tabs:
+The enhanced Git Updater provides a dedicated admin menu with three specialized pages:
 
-- **Enhanced Install** - Modern repository installation interface
-- **Repository Manager** - Complete repository lifecycle management
+- **Enhanced Install** - Modern repository installation with organization fetching
+- **Repository Manager** - Complete repository lifecycle management with real-time status
+- **Batch Operations** - Multi-repository operations with progress tracking
+
+### **Menu Location**
+```
+📁 KISS SBI x GU (with download icon)
+   ├── Enhanced Install (default)
+   ├── Repository Manager
+   └── Batch Operations
+```
 
 ---
 

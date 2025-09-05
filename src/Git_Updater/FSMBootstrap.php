@@ -60,7 +60,11 @@ class FSMBootstrap {
         $enhanced_admin = $this->container->get(EnhancedAdminPage::class);
         $enhanced_admin->init();
 
-        // Add redirect to enhanced UI for first-time users
+        // Initialize KISS SBI admin menu
+        $kiss_sbi_menu = $this->container->get(Admin\KissSbiAdminMenu::class);
+        $kiss_sbi_menu->init();
+
+        // Add redirect to enhanced UI for first-time users (keeping for backward compatibility)
         add_action('admin_init', [$this, 'maybe_redirect_to_enhanced_ui']);
         add_action('admin_init', [$this, 'handle_reset_redirect']);
 
@@ -102,6 +106,15 @@ class FSMBootstrap {
         // Register enhanced admin page
         $this->container->singleton(EnhancedAdminPage::class, function($container) {
             return new EnhancedAdminPage(
+                $container->get(GitUpdaterStateManager::class),
+                $container->get(GitUpdaterIntegrationService::class),
+                $container->get(GitUpdaterAjaxHandler::class)
+            );
+        });
+
+        // Register KISS SBI admin menu
+        $this->container->singleton(Admin\KissSbiAdminMenu::class, function($container) {
+            return new Admin\KissSbiAdminMenu(
                 $container->get(GitUpdaterStateManager::class),
                 $container->get(GitUpdaterIntegrationService::class),
                 $container->get(GitUpdaterAjaxHandler::class)
